@@ -1,17 +1,24 @@
 import P5 from "p5";
 import { HexGrid, Cell, initState } from "./hex";
 
-let p: P5;
+const app = document.getElementById("app");
+const appwWidth = app?.getBoundingClientRect().width || 50;
+const appwHeight = app?.getBoundingClientRect().height || 50;
 
-const state = initState({ rows: 11, cols: 26 }, 20);
+let p: P5;
+const cellSize = 20;
+
+const state = initState({ cols: 25, rows: 12 }, cellSize);
 
 // Init grid with drawHexagon callback function
 const grid = new HexGrid(state, (cell: Cell) => {
   p.fill("black");
   p.stroke("white");
+  if (cell.entity.type == "PIECE") p.fill("green");
+  if (cell.entity.type == "WALL") p.fill("blue");
+
   if (cell.state == "HOVERED") p.fill("gray");
   if (cell.state == "ACTIVE") p.fill("red");
-  if (cell.state == "GREEN") p.fill("green");
 
   p.beginShape();
   for (let i = 0; i < 6; i++) {
@@ -28,27 +35,41 @@ const sketch = (p5: P5) => {
   p = p5;
 
   p5.setup = () => {
-    const canvas = p5.createCanvas(800, 400);
+    const canvas = p5.createCanvas(appwWidth, appwHeight);
     canvas.parent("app");
     p5.frameRate(24);
+    initArena();
+  };
+
+  p5.mouseClicked = () => {
+    console.log(p5.mouseX, p5.mouseY);
   };
 
   // The sketch draw method
   p5.draw = () => {
-    p5.background("black");
+    p5.clear(1, 1, 1, 1);
     grid.resetCellState();
-    let cell1 = grid.state.cells[0];
-    let cell2 = grid.getHoveredCell(p5.mouseX, p5.mouseY);
-    if (cell2) {
-      grid.getCellsBetweenCells(cell1, cell2);
-    }
     grid.drawGrid();
-  };
-
-  p5.mouseClicked = () => {
-    const cell = grid.getHoveredCell(p5.mouseX, p5.mouseY);
-    if (cell) cell.state = "ACTIVE";
   };
 };
 
 new P5(sketch);
+
+function initArena() {
+  grid.state.cells[68].entity.type = "WALL";
+  grid.state.cells[69].entity.type = "WALL";
+  grid.state.cells[70].entity.type = "WALL";
+  grid.state.cells[71].entity.type = "WALL";
+  grid.state.cells[88].entity.type = "WALL";
+  grid.state.cells[89].entity.type = "WALL";
+  grid.state.cells[90].entity.type = "WALL";
+  grid.state.cells[91].entity.type = "WALL";
+  grid.state.cells[92].entity.type = "WALL";
+  grid.state.cells[93].entity.type = "WALL";
+  grid.state.cells[94].entity.type = "WALL";
+  grid.state.cells[95].entity.type = "WALL";
+  grid.state.cells[96].entity.type = "WALL";
+  grid.state.cells[97].entity.type = "WALL";
+  grid.state.cells[98].entity.type = "WALL";
+  grid.state.cells[99].entity.type = "WALL";
+}

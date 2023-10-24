@@ -1,10 +1,15 @@
+export type Entity = {
+  id: number;
+  type: "WALL" | "PIECE" | null;
+};
+
 export type Cell = {
   x: number;
   y: number;
   radius: number;
   index: number;
-  content: any;
-  state: "NULL" | "HOVERED" | "ACTIVE" | "GREEN";
+  entity: Entity;
+  state: "NULL" | "HOVERED" | "ACTIVE";
 };
 
 export type State = {
@@ -28,7 +33,7 @@ export function initState(
         y: y + celLRadius,
         radius: celLRadius,
         index,
-        content: null,
+        entity: { id: 0, type: null },
         state: "NULL",
       });
       index++;
@@ -51,6 +56,32 @@ export class HexGrid {
     }
   }
 
+  getCellRange(cell: Cell, range: number) {
+    cell.state = "ACTIVE";
+    let cellsInRange = [...this.getAdjacentCells(cell)];
+
+    // Remove any cells that have an entity
+    cellsInRange = cellsInRange.filter((cell) => {
+      return cell.entity.type == null;
+    });
+
+    for (let i = 1; i < range; i++) {
+      cellsInRange.forEach((rangeCell) => {
+        //If rangeCell is empty, retrieve adjacent cells
+        if (rangeCell.entity.type == null) {
+          const adjacentCells = this.getAdjacentCells(rangeCell);
+          adjacentCells.forEach((adjCell) => {
+            if (adjCell.entity.type == null) cellsInRange.push(adjCell);
+          });
+        }
+      });
+    }
+
+    return removeDuplicate(cellsInRange).filter((uniqCell) => {
+      return uniqCell.index != cell.index;
+    });
+  }
+
   getCellsBetweenCells(cell1: Cell, cell2: Cell) {
     cell1.state = "ACTIVE";
     cell2.state = "ACTIVE";
@@ -70,12 +101,11 @@ export class HexGrid {
       });
       if (closestCell.index != cell2.index) {
         result.push(closestCell);
-        closestCell.state = "GREEN";
+        closestCell.state = "HOVERED";
       }
     }
   }
 
-  // Returns an array containg the adjacent cells
   getAdjacentCells(cell: Cell) {
     const adjacentCells: Cell[] = [];
     for (const otherCell of this.state.cells) {
@@ -106,4 +136,9 @@ export class HexGrid {
 
 function dist(cell: Cell, otherCell: Cell) {
   return Math.sqrt((cell.x - otherCell.x) ** 2 + (cell.y - otherCell.y) ** 2);
+}
+
+function removeDuplicate<Type>(arr: Type[]): Type[] {
+  const ids = arr.map(({ index }) => index);
+  return arr.filter(({ index }, i) => !ids.includes(index, i + 1));
 }
