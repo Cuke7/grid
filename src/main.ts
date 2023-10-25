@@ -1,75 +1,79 @@
-import P5 from "p5";
-import { HexGrid, Cell, initState } from "./hex";
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { HexGrid, State, initState } from "./hex";
 
-const app = document.getElementById("app");
-const appwWidth = app?.getBoundingClientRect().width || 50;
-const appwHeight = app?.getBoundingClientRect().height || 50;
-
-let p: P5;
-const cellSize = 20;
+const cellSize = 1;
 
 const state = initState({ cols: 25, rows: 12 }, cellSize);
 
-// Init grid with drawHexagon callback function
-const grid = new HexGrid(state, (cell: Cell) => {
-  p.fill("black");
-  p.stroke("white");
-  if (cell.entity.type == "PIECE") p.fill("green");
-  if (cell.entity.type == "WALL") p.fill("blue");
+const app = document.getElementById("app");
 
-  if (cell.state == "HOVERED") p.fill("gray");
-  if (cell.state == "ACTIVE") p.fill("red");
+const { scene, camera, renderer } = init(app, state);
 
-  p.beginShape();
-  for (let i = 0; i < 6; i++) {
-    let angle = (p.TWO_PI / 6) * i;
-    let xOffset = cell.radius * p.cos(angle);
-    let yOffset = cell.radius * p.sin(angle);
-    p.vertex(cell.x + xOffset, cell.y + yOffset);
+// Main loop
+function animate() {
+  requestAnimationFrame(animate);
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+function init(app: HTMLElement | null, state: State) {
+  const scene = new THREE.Scene();
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(
+    app?.getBoundingClientRect().width || 500,
+    app?.getBoundingClientRect().height || 500
+  );
+  app?.appendChild(renderer.domElement);
+
+  const camera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    1,
+    10000
+  );
+  const controls = new OrbitControls(camera, renderer.domElement);
+
+  controls.object.position.set(18, -10, 30);
+  controls.target.set(18, 4, 6);
+  controls.update();
+
+  const axesHelper = new THREE.AxesHelper(10);
+  scene.add(axesHelper);
+
+  const grid = new HexGrid(state);
+
+  for (const cell of grid.state.cells) {
+    const hex = createHexagon(cell.radius);
+    hex.position.set(cell.x, cell.y, 0);
+    scene.add(hex);
   }
-  p.endShape(p.CLOSE);
-});
 
-// Creating the sketch itself
-const sketch = (p5: P5) => {
-  p = p5;
+  return { scene, renderer, camera, controls, grid };
+}
 
-  p5.setup = () => {
-    const canvas = p5.createCanvas(appwWidth, appwHeight);
-    canvas.parent("app");
-    p5.frameRate(24);
-    initArena();
-  };
+function createHexagon(radius: number) {
+  const hexagonMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
-  p5.mouseClicked = () => {
-    console.log(p5.mouseX, p5.mouseY);
-  };
+  const hexagonShape = new THREE.Shape();
+  const numberOfSides = 6;
 
-  // The sketch draw method
-  p5.draw = () => {
-    p5.clear(1, 1, 1, 1);
-    grid.resetCellState();
-    grid.drawGrid();
-  };
-};
+  for (let i = 0; i < numberOfSides; i++) {
+    const angle = (i / numberOfSides) * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
 
-new P5(sketch);
+    if (i === 0) {
+      hexagonShape.moveTo(x, y);
+    } else {
+      hexagonShape.lineTo(x, y);
+    }
+  }
 
-function initArena() {
-  grid.state.cells[68].entity.type = "WALL";
-  grid.state.cells[69].entity.type = "WALL";
-  grid.state.cells[70].entity.type = "WALL";
-  grid.state.cells[71].entity.type = "WALL";
-  grid.state.cells[88].entity.type = "WALL";
-  grid.state.cells[89].entity.type = "WALL";
-  grid.state.cells[90].entity.type = "WALL";
-  grid.state.cells[91].entity.type = "WALL";
-  grid.state.cells[92].entity.type = "WALL";
-  grid.state.cells[93].entity.type = "WALL";
-  grid.state.cells[94].entity.type = "WALL";
-  grid.state.cells[95].entity.type = "WALL";
-  grid.state.cells[96].entity.type = "WALL";
-  grid.state.cells[97].entity.type = "WALL";
-  grid.state.cells[98].entity.type = "WALL";
-  grid.state.cells[99].entity.type = "WALL";
+  hexagonShape.closePath();
+
+  const hexagonGeometry = new THREE.ShapeGeometry(hexagonShape);
+  return new THREE.Mesh(hexagonGeometry, hexagonMaterial);
 }

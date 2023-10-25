@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 export type Entity = {
   id: number;
   type: "WALL" | "PIECE" | null;
@@ -43,17 +45,10 @@ export function initState(
 }
 
 export class HexGrid {
-  drawHexagon = (_cell: Cell) => {};
   state: State;
 
-  constructor(state: State, drawHexagon: (cell: Cell) => void) {
-    (this.state = state), (this.drawHexagon = drawHexagon);
-  }
-
-  drawGrid() {
-    for (const cell of this.state.cells) {
-      this.drawHexagon(cell);
-    }
+  constructor(state: State) {
+    this.state = state;
   }
 
   getCellRange(cell: Cell, range: number) {
